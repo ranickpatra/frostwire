@@ -28,7 +28,6 @@ import com.limegroup.gnutella.gui.*;
 import com.limegroup.gnutella.settings.SharingSettings;
 import com.limegroup.gnutella.util.FrostWireUtils;
 import net.miginfocom.swing.MigLayout;
-import org.gudy.azureus2.core3.util.Debug;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
@@ -621,7 +620,7 @@ public class CreateTorrentDialog extends JDialog {
         } catch (Throwable e) {
             result = false;
             revertSaveCloseButtons();
-            Debug.printStackTrace(e);
+            e.printStackTrace();
             reportCurrentTask(I18n.tr("Operation failed."));
         }
 

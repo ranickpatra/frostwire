@@ -40,8 +40,6 @@ import com.limegroup.gnutella.gui.GUIMediator;
 import com.limegroup.gnutella.gui.GUIUtils;
 import com.limegroup.gnutella.gui.I18n;
 import net.miginfocom.swing.MigLayout;
-import org.gudy.azureus2.core3.util.Debug;
-import org.gudy.azureus2.core3.util.DisplayFormatters;
 
 import javax.swing.*;
 import java.awt.*;
@@ -105,7 +103,7 @@ final class BTDownloadMediatorAdvancedMenuFactory {
                 totalDownSpeed += maxdl;
 
             } catch (Exception ex) {
-                Debug.printStackTrace(ex);
+                ex.printStackTrace();
             }
         }
 
@@ -244,7 +242,7 @@ final class BTDownloadMediatorAdvancedMenuFactory {
         }
         if (totalDownSpeed > 0) {
             speedText.append(separator);
-            speedText.append(DisplayFormatters.formatByteCountToKiBEtcPerSec(totalDownSpeed));
+            speedText.append(GUIUtils.rate2speed(totalDownSpeed));
         }
         itemCurrentDownSpeed.setText(speedText.toString());
         menuDownSpeed.add(itemCurrentDownSpeed);
@@ -286,20 +284,7 @@ final class BTDownloadMediatorAdvancedMenuFactory {
                 // dms.length has to be > 0 when hasSelection
                 int limit = (int) (maxDownload / (10 * num_entries) * (12 - i));
                 StringBuffer speed = new StringBuffer();
-                speed.append(DisplayFormatters.formatByteCountToKiBEtcPerSec(limit * num_entries));
-                //                if (num_entries > 1) {
-                //                    speed.append(" ");
-                //                    speed.append(MessageText
-                //                            .getString("MyTorrentsView.menu.setSpeed.in"));
-                //                    speed.append(" ");
-                //                    speed.append(num_entries);
-                //                    speed.append(" ");
-                //                    speed.append(MessageText
-                //                            .getString("MyTorrentsView.menu.setSpeed.slots"));
-                //                    speed.append(" ");
-                //                    speed
-                //                            .append(DisplayFormatters.formatByteCountToKiBEtcPerSec(limit));
-                //                }
+                speed.append(GUIUtils.rate2speed(limit * num_entries));
                 itemsDownSpeed[i].setText(speed.toString());
                 itemsDownSpeed[i].putClientProperty("maxdl", new Integer(limit));
                 menuDownSpeed.add(itemsDownSpeed[i]);
@@ -351,7 +336,7 @@ final class BTDownloadMediatorAdvancedMenuFactory {
         }
         if (totalUpSpeed > 0) {
             speedText.append(separator);
-            speedText.append(DisplayFormatters.formatByteCountToKiBEtcPerSec(totalUpSpeed));
+            speedText.append(GUIUtils.rate2speed(totalUpSpeed));
         }
         itemCurrentUpSpeed.setText(speedText.toString());
         menuUpSpeed.add(itemCurrentUpSpeed);
@@ -393,56 +378,17 @@ final class BTDownloadMediatorAdvancedMenuFactory {
 
                 int limit = (int) (maxUpload / (10 * num_entries) * (12 - i));
                 StringBuffer speed = new StringBuffer();
-                speed.append(DisplayFormatters.formatByteCountToKiBEtcPerSec(limit * num_entries));
-                //                if (num_entries > 1) {
-                //                    speed.append(" ");
-                //                    speed.append(MessageText
-                //                            .getString("MyTorrentsView.menu.setSpeed.in"));
-                //                    speed.append(" ");
-                //                    speed.append(num_entries);
-                //                    speed.append(" ");
-                //                    speed.append(MessageText
-                //                            .getString("MyTorrentsView.menu.setSpeed.slots"));
-                //                    speed.append(" ");
-                //                    speed
-                //                            .append(DisplayFormatters.formatByteCountToKiBEtcPerSec(limit));
-                //                }
-
+                speed.append(GUIUtils.rate2speed(limit * num_entries));
                 itemsUpSpeed[i].setText(speed.toString());
                 itemsUpSpeed[i].putClientProperty("maxul", new Integer(limit));
                 menuUpSpeed.add(itemsUpSpeed[i]);
             }
         }
-
-        //        menuUpSpeed.addSeparator();
-        //
-        //        final SkinMenuItem itemUpSpeedManualSingle = new SkinMenuItem();
-        //        itemUpSpeedManualSingle.setText(I18n.tr("Manual..."));
-        //        itemUpSpeedManualSingle.addActionListener(new ActionListener() {
-        //            public void actionPerformed(ActionEvent e) {
-        //                //int speed_value = getManualSpeedValue(shell, false);
-        //                //if (speed_value > 0) {adapter.setUpSpeed(speed_value);}
-        //            }
-        //        });
-        //        menuUpSpeed.add(itemUpSpeedManualSingle);
-
-        //        if (num_entries > 1) {
-        //            final MenuItem itemUpSpeedManualShared = new MenuItem(menuUpSpeed, SWT.PUSH);
-        //            Messages.setLanguageText(itemUpSpeedManualShared, isTorrentContext?"MyTorrentsView.menu.manual.shared_torrents":"MyTorrentsView.menu.manual.shared_peers" );
-        //            itemUpSpeedManualShared.addSelectionListener(new SelectionAdapter() {
-        //                public void widgetSelected(SelectionEvent e) {
-        //                    int speed_value = getManualSharedSpeedValue(shell, false, num_entries);
-        //                    if (speed_value > 0) {adapter.setUpSpeed(speed_value);}
-        //                }
-        //            });
-        //        }
-
     }
 
     public interface SpeedAdapter {
-        public void setUpSpeed(int val);
-
-        public void setDownSpeed(int val);
+        void setUpSpeed(int val);
+        void setDownSpeed(int val);
     }
 
     public static class EditTrackersAction extends AbstractAction {
@@ -473,12 +419,7 @@ final class BTDownloadMediatorAdvancedMenuFactory {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    dm.requestTrackerAnnounce();
-                }
-            }).start();
+            new Thread(() -> dm.requestTrackerAnnounce()).start();
         }
     }
 
@@ -494,12 +435,7 @@ final class BTDownloadMediatorAdvancedMenuFactory {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    dm.requestTrackerScrape();
-                }
-            }).start();
+            new Thread(() -> dm.requestTrackerScrape()).start();
         }
     }
 
@@ -543,21 +479,11 @@ final class BTDownloadMediatorAdvancedMenuFactory {
             panel.add(scrollPane, "cell 0 1, growx, growy");
 
             JButton buttonAccept = new JButton(I18n.tr("Accept"));
-            buttonAccept.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    changeTrackers(textTrackers.getText());
-                }
-            });
+            buttonAccept.addActionListener(e -> changeTrackers(textTrackers.getText()));
             panel.add(buttonAccept, "cell 0 2, split 2, right");
 
             JButton buttonCancel = new JButton(I18n.tr("Cancel"));
-            buttonCancel.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    EditTrackerDialog.this.dispose();
-                }
-            });
+            buttonCancel.addActionListener(e -> EditTrackerDialog.this.dispose());
             panel.add(buttonCancel);
 
             setContentPane(panel);
