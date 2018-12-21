@@ -2,7 +2,7 @@
  * File    : ViewUtils.java
  * Created : 24-Oct-2003
  * By      : parg
- * 
+ *
  * Copyright (C) 2004, 2005, 2006 Aelitis SAS, All rights Reserved
  *
  * This program is free software; you can redistribute it and/or modify
@@ -242,7 +242,7 @@ final class BTDownloadMediatorAdvancedMenuFactory {
         }
         if (totalDownSpeed > 0) {
             speedText.append(separator);
-            speedText.append(GUIUtils.rate2speed(totalDownSpeed));
+            speedText.append(GUIUtils.getBytesInHuman(totalDownSpeed) + "/s");
         }
         itemCurrentDownSpeed.setText(speedText.toString());
         menuDownSpeed.add(itemCurrentDownSpeed);
@@ -284,7 +284,7 @@ final class BTDownloadMediatorAdvancedMenuFactory {
                 // dms.length has to be > 0 when hasSelection
                 int limit = (int) (maxDownload / (10 * num_entries) * (12 - i));
                 StringBuffer speed = new StringBuffer();
-                speed.append(GUIUtils.rate2speed(limit * num_entries));
+                speed.append(GUIUtils.getBytesInHuman(limit * num_entries) + "/s");
                 itemsDownSpeed[i].setText(speed.toString());
                 itemsDownSpeed[i].putClientProperty("maxdl", new Integer(limit));
                 menuDownSpeed.add(itemsDownSpeed[i]);
@@ -336,7 +336,7 @@ final class BTDownloadMediatorAdvancedMenuFactory {
         }
         if (totalUpSpeed > 0) {
             speedText.append(separator);
-            speedText.append(GUIUtils.rate2speed(totalUpSpeed));
+            speedText.append(GUIUtils.getBytesInHuman(totalUpSpeed) + "/s");
         }
         itemCurrentUpSpeed.setText(speedText.toString());
         menuUpSpeed.add(itemCurrentUpSpeed);
@@ -378,7 +378,7 @@ final class BTDownloadMediatorAdvancedMenuFactory {
 
                 int limit = (int) (maxUpload / (10 * num_entries) * (12 - i));
                 StringBuffer speed = new StringBuffer();
-                speed.append(GUIUtils.rate2speed(limit * num_entries));
+                speed.append(GUIUtils.getBytesInHuman(limit * num_entries) + "/s");
                 itemsUpSpeed[i].setText(speed.toString());
                 itemsUpSpeed[i].putClientProperty("maxul", new Integer(limit));
                 menuUpSpeed.add(itemsUpSpeed[i]);
@@ -388,6 +388,7 @@ final class BTDownloadMediatorAdvancedMenuFactory {
 
     public interface SpeedAdapter {
         void setUpSpeed(int val);
+
         void setDownSpeed(int val);
     }
 
