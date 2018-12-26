@@ -509,19 +509,15 @@ public class MPlayer extends BaseMediaPlayer {
 
     protected MPlayerInstance getCurrentInstance() {
         synchronized (this) {
-
             return (current_instance);
         }
     }
 
     public void doPause() {
         MPlayerInstance instance = getCurrentInstance();
-
         if (instance != null) {
-
             instance.doPause();
         }
-
         reportNewState(MediaPlaybackState.Paused);
     }
 

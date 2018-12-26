@@ -89,18 +89,11 @@ public class MPlayerInstance {
 
     //private String fileOpened;
 
-    public void
-    doOpen(
-            String fileOrUrl,
-            int initialVolume,
-            final OutputConsumer _outputConsumer) {
+    public void doOpen(String fileOrUrl, int initialVolume, final OutputConsumer _outputConsumer) {
         synchronized (this) {
-
             if (starting || started) {
-
                 throw (new RuntimeException("no can do"));
             }
-
             starting = true;
         }
 
@@ -108,20 +101,13 @@ public class MPlayerInstance {
                 new OutputConsumer() {
                     boolean latest = false;
 
-                    public void
-                    consume(
-                            String output) {
+                    public void consume(String output) {
                         // System.out.println( output );
-
                         boolean is_paused = output.startsWith("ID_PAUSED");
-
                         if (is_paused != latest) {
-
                             updateObservedPaused(is_paused);
-
                             latest = is_paused;
                         }
-
                         _outputConsumer.consume(output);
                     }
                 };
@@ -129,11 +115,8 @@ public class MPlayerInstance {
         try {
 
             //fileOpened = fileOrUrl;
-
             List<String> cmdList = new ArrayList<String>();
-
             cmdList.add(BINARY_PATH.getAbsolutePath());
-
             cmdList.add("-slave");
 
             //cache tunning for http streaming, without this some
@@ -181,7 +164,6 @@ public class MPlayerInstance {
                 //  decide we want to block video output for cases other than direct3d on windows.
                 //cmdList.add("-vo");
                 //cmdList.add("direct3d,gl,directx,sdl");
-
                 cmdList.add("-double");
 
                 cmdList.add("-priority");
@@ -208,38 +190,6 @@ public class MPlayerInstance {
                 cmdList.add("-wid");
                 cmdList.add(String.valueOf(MPlayerMediator.instance().getCanvasComponentHwnd()));
             }
-
-
-//			if(Utils.isWindows()) {
-//				
-//			} else {
-//				cmdList.add(0,ShellUtilityFinder.getNice());
-//				cmdList.add(1,"-n");
-//				cmdList.add(2,"0");
-//			}
-//			
-//			if(Utils.isWindows()) {
-//				
-//				cmdList.add("-ass");
-//				cmdList.add("-ass-color");
-//				cmdList.add("FFFFFF00");
-//				cmdList.add("-ass-border-color");
-//				cmdList.add("00000040");
-//			}
-
-//			Font font = Font.getFont("LiberationSans-Bold.ttf");
-//			if(font != null) {			
-//				cmdList.add("-font");
-//				cmdList.add(font.getFontPath());
-//				cmdList.add("-subfont-text-scale");
-//				//cmdList.add(Utils.isWindows() ? "4" : "2.5");
-//				cmdList.add("-subfont-blur");
-//				cmdList.add("4");
-//				cmdList.add("-subfont-outline");
-//				cmdList.add("2");
-//			}
-//			
-//			cmdList.add("-framedrop");
 
             //Set the initial volume.
             cmdList.add("-volume");
@@ -297,9 +247,6 @@ public class MPlayerInstance {
                         try {
                             String line;
                             while ((line = brStdOut.readLine()) != null) {
-//								if ( LOG && !line.startsWith( "A:" )){
-//									System.out.println( "STDOUT<- " + line );
-//								}
                                 output_consumer.consume(line);
                             }
                         } catch (Exception e) {
@@ -315,11 +262,6 @@ public class MPlayerInstance {
                         try {
                             String line;
                             while ((line = brStdErr.readLine()) != null) {
-
-//								if ( LOG && !line.startsWith( "A:" )){
-//									System.out.println( "STDERR<- " + line );
-//								}
-
                                 output_consumer.consume(line);
                             }
                         } catch (Exception e) {
@@ -331,12 +273,13 @@ public class MPlayerInstance {
                 stdErrReader.start();
 
                 Thread stdInWriter = new Thread("Player Console In Writer") {
-                    public void
-                    run() {
+                    public void run() {
                         try {
                             while (true) {
 
+                                LOGGER.info("command_sem.acquire() - waiting...");
                                 command_sem.acquire();
+                                LOGGER.info("command_sem.acquire() - ended waiting...");
 
                                 String toBeSent;
 
@@ -386,7 +329,6 @@ public class MPlayerInstance {
                             e.printStackTrace();
 
                         } finally {
-
                             stop_sem.release();
                         }
                     }
@@ -416,27 +358,21 @@ public class MPlayerInstance {
         }
     }
 
-    protected void
-    sendCommand(
-            String cmd,
-            CommandPauseMode pauseMode) {
+    protected void sendCommand(String cmd, CommandPauseMode pauseMode) {
+        LOGGER.info("sendCommand(cmd=" +cmd + ", pauseMode=" + pauseMode.name() + ")");
         synchronized (this) {
-
             if (stopped) {
-
+                LOGGER.info("sendCommand(cmd=" +cmd + ", pauseMode=" + pauseMode.name() + ") stopped, aborted");
                 return;
             }
-
             String prefix = "";
-
             if (CommandPauseMode.KEEP_FORCE == pauseMode) {
                 prefix = "pausing_keep_force ";
             } else if (CommandPauseMode.KEEP == pauseMode) {
                 prefix = "pausing_keep ";
             }
-
             commands.add(prefix + cmd);
-
+            LOGGER.info("sendCommand - command_sem.release()!");
             command_sem.release();
         }
     }
@@ -479,40 +415,43 @@ public class MPlayerInstance {
         }
     }
 
+    private static class PauseStateChangeTask extends TimerTask {
+
+        private final int pause_change_id;
+        private final int delay = 333;
+        private int level = 0;
+        MPlayerInstance mplayer;
+
+        PauseStateChangeTask(MPlayerInstance mplayer, int pause_change_id) {
+            this.mplayer = mplayer;
+            this.pause_change_id = pause_change_id;
+        }
+
+        @Override
+        public void run() {
+            synchronized (mplayer) {
+                LOGGER.info("TimerTask - pausedStateChanging - level=" + level);
+                if (!mplayer.stopped && pause_change_id == mplayer.pause_change_id_next && level < 20) {
+                    level++;
+                    if (mplayer.pause_reported_time >= 0 && mplayer.pause_reported == mplayer.paused) {
+                        LOGGER.info("TimerTask - pausedStateChanging - aborting");
+                        return;
+                    }
+                    System.out.println("pausedStateChanging() sending pause");
+                    mplayer.sendCommand("pause", CommandPauseMode.NONE);
+
+                    new Timer().schedule(new PauseStateChangeTask(mplayer, pause_change_id), delay + mplayer.pending_sleeps);
+                }
+            }
+        }
+    }
+
     private void pausedStateChanging() {
         final int delay = 333;
-
         pause_reported_time = -1;
-
         final int pause_change_id = ++pause_change_id_next;
-        final long offsetDelayTime = getMonotonousTime() + delay + pending_sleeps;
-        timer.schedule(new TimerTask() {
-                           int level = 0;
-
-                           @Override
-                           public void run() {
-                               synchronized (MPlayerInstance.this) {
-
-                                   if (!stopped &&
-                                           pause_change_id == pause_change_id_next &&
-                                           level < 20) {
-
-                                       level++;
-
-                                       if (pause_reported_time >= 0 && pause_reported == paused) {
-
-                                           return;
-                                       }
-                                       //System.out.println("pausedStateChanging() sending pause");
-                                       sendCommand("pause", CommandPauseMode.NONE);
-
-                                       timer.schedule(this,
-                                               getMonotonousTime() + delay + pending_sleeps);
-                                   }
-                               }
-                           }
-                       },
-                offsetDelayTime);
+        final long offsetDelayTime = delay + pending_sleeps;
+        timer.schedule(new PauseStateChangeTask(this, pause_change_id), offsetDelayTime);
     }
 
     protected boolean doPause() {
@@ -655,8 +594,6 @@ public class MPlayerInstance {
                 redraw_last_frame = now;
                 sendCommand("frame_step", CommandPauseMode.NONE);
                 redrawing = true;
-
-                long offsetTime = getMonotonousTime() + delay;
                 timer.schedule(new TimerTask() {
                                    @Override
                                    public void run() {
@@ -667,21 +604,19 @@ public class MPlayerInstance {
                                                redrawing = false;
                                                doMute(false);
                                            } else {
-                                               timer.schedule(this, getMonotonousTime() + diff);
+                                               // TODO: Refactor TimerTask into static class so it can be resubmitted
+                                               timer.schedule(this, diff);
                                            }
                                        }
                                    }
                                },
-                        offsetTime);
+                        delay);
             }
         }
     }
 
-    protected String
-    setSubtitles(
-            Language language) {
+    protected String setSubtitles(Language language) {
         synchronized (this) {
-
             String langId;
             String commandName = "sub_demux ";
             if (language != null) {
